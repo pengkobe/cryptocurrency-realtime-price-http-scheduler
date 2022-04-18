@@ -1,0 +1,18 @@
+{
+  "name": "cryptocurrency-realtime-price-http-scheduler",
+  "version": "1.0.0",
+  "description": "load data from cryptonator",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "yipeng",
+  "license": "MIT",
+  "devDependencies": {},
+  "dependencies": {
+    "koa": "^2.13.4",
+    "ioredis": "^5.0.4",
+    "node-schedule": "^2.1.0"
+  }
+}
