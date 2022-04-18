@@ -8,7 +8,7 @@ const redis_cache = new Redis(process.env.redis_cache_url);
 let list = mockData(redis_cache);
 
 async function startTask() {
-    schedule.scheduleJob('load_price', '10,40 * * * * *', async () => {
+    schedule.scheduleJob('load_price', '10,20,30,40,50 * * * * *', async () => {
         try {
             // let url = 'https://api.cryptonator.com/api/ticker/btc-usd';
             // //{"ticker":{"base":"BTC","target":"USD","price":"443.7807865468","volume":"31720.1493969300","change":"0.3766203596"},"timestamp":1399490941,"success":true,"error":""}
@@ -20,25 +20,27 @@ async function startTask() {
             // mock changed currency
             const rand = Math.floor(Math.random() * 10);
             const channel = `currency_info_change`;
-
-            // generate update message
-            let message = {
-                name: list[rand].name,
-                changeList: [{
-                    property: "price",
-                    value: (parseFloat(list[rand].price) + 2) + '',
-                }]
-            }
-
-            // update cache
+            
             let cache_val = await redis_cache.get(list[rand].name);
+            
             if (cache_val) {
                 console.log(cache_val)
                 cache_val = JSON.parse(cache_val);
+                // generate update message
+                let message = {
+                    name: cache_val.name,
+                    changeList: [{
+                        property: "price",
+                        value: (parseFloat(cache_val.price) + 2) + '',
+                    }]
+                }
+
+                
+                // update cache
                 for (let val of message.changeList) {
                     cache_val[val.property] = val.value;
                 }
-                redis_cache.set(list[rand].name, JSON.stringify(cache_val));
+                redis_cache.set(cache_val.name, JSON.stringify(cache_val));
 
                 // publish message
                 console.log("Published %s to %s", message, channel);
