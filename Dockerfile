@@ -10,5 +10,10 @@ WORKDIR /app
 RUN npm install
 #对外暴露的端口
 EXPOSE 7007
+
+# 环境变量设置
+ENV redis_pub_sub_url redis://default:pwd@127.0.0.1:6379/10
+ENV redis_cache_url redis://default:pwd@127.0.0.1:6379/11
+
 #程序启动脚本
 CMD ["npm", "start"]
