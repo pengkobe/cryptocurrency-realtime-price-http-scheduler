@@ -5,6 +5,7 @@ setup timer to load data from nomics
 
 ```bash
 git clone https://github.com/pengkobe/cryptocurrency-realtime-price-http-scheduler
+cd cryptocurrency-realtime-price-http-scheduler
 npm install
 
 # set redis urls and nomic token Manually in schedule.js or you can config your env variables
@@ -20,7 +21,7 @@ node index.js
 
 - build on you own
 ```bash
-docker build -t cryptocurrency-realtime-price-scheduler-scheduler .
+docker build -t cryptocurrency-realtime-price-scheduler-scheduler:v1.0 .
 # redis url format: redis://default:your_pwd@127.0.0.1:6379/11
 docker run --env redis_pub_sub_url={redis_pub_sub_url} \
 --env redis_cache_url={redis_cache_url} \
