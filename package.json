@@ -11,8 +11,9 @@
   "license": "MIT",
   "devDependencies": {},
   "dependencies": {
-    "koa": "^2.13.4",
+    "axios": "^0.26.1",
     "ioredis": "^5.0.4",
+    "koa": "^2.13.4",
     "node-schedule": "^2.1.0"
   }
 }
