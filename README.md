@@ -32,6 +32,7 @@ cryptocurrency-realtime-price-http-scheduler
 - or you can pull from docker hub
 
 ```bash
+# Because of network issues, the latest version publish failed. it could not use for the time being
 docker pull pengkobe/cryptocurrency-realtime-price-http-scheduler
 docker run --env redis_pub_sub_url={redis_pub_sub_url} \
 --env redis_cache_url={redis_cache_url} \
