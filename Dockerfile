@@ -12,8 +12,11 @@ RUN npm install
 EXPOSE 7007
 
 # 环境变量设置
-ENV redis_pub_sub_url redis://default:pwd@127.0.0.1:6379/10
-ENV redis_cache_url redis://default:pwd@127.0.0.1:6379/11
-
+#  redis://default:pwd@127.0.0.1:6379/10
+ENV redis_pub_sub_url
+# redis://default:pwd@127.0.0.1:6379/11
+ENV redis_cache_url 
+# you can get it from:  https://p.nomics.com/cryptocurrency-bitcoin-api
+ENV nomic_api_key 
 #程序启动脚本
 CMD ["npm", "start"]
