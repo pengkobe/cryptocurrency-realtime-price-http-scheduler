@@ -14,7 +14,7 @@ const TIMESTAMP_MAP = new Map([["BTC", now], ["ETH", now], ["LTC", now],
 
 async function startTask() {
     // load data from nomic every 30s
-    if(!redis_pub_sub || !redis_cache || !NOMIC_API_KEY){
+    if (!redis_pub_sub || !redis_cache || !NOMIC_API_KEY) {
         console.err('Please set these environment variables correctly: redis_pub_sub_url, redis_cache_url, nomic_api_key');
     }
 
@@ -40,7 +40,6 @@ function updateDataFromNomics() {
     });
 
     fetchDataFromNomics(`https://api.nomics.com/v1/currencies/ticker?key=${NOMIC_API_KEY}&ids=${IDS}&interval=1d`, async (response) => {
-        // body: {"ticker":{"base":"BTC","target":"USD","price":"443.7807865468","volume":"31720.1493969300","change":"0.3766203596"},"timestamp":1399490941,"success":true,"error":""}
         let res_data = response.data;
         for (let curr_data of res_data) {
             curr_data["name"] = NAME_MAP.get(curr_data.currency);
@@ -105,7 +104,11 @@ function updateDataFromNomics() {
             .then(response => {
                 callback(response);
             }).catch(err => {
-                console.error(err);
+                if (err.response.status === 401) {
+                    console.error('Your api key is not valid!')
+                } else {
+                    console.error(err);
+                }
             });
     }
 }
