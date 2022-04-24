@@ -5,6 +5,7 @@ setup timer to load data from nomics
 
 ```bash
 git clone https://github.com/pengkobe/cryptocurrency-realtime-price-http-scheduler
+npm install
 
 # set redis urls and nomic token Manually in schedule.js or you can config your env variables
 vim schedule.js
