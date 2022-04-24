@@ -1,9 +1,13 @@
 const axios = require('axios');
 const Redis = require("ioredis");
 const schedule = require('node-schedule');
-const redis_pub_sub = new Redis(process.env.redis_pub_sub_url);
-const redis_cache = new Redis(process.env.redis_cache_url);
-const NOMIC_API_KEY = process.env.nomic_api_key;
+
+const redis_pub_sub_url = process.env.redis_pub_sub_url;
+const redis_cache_url = process.env.redis_cache_url;
+const nomic_api_key = process.env.nomic_api_key;
+const redis_pub_sub = new Redis(redis_pub_sub_url);
+const redis_cache = new Redis(redis_cache_url);
+const NOMIC_API_KEY = nomic_api_key;
 
 const NAME_MAP = new Map([["BTC", "Bitcoin"], ["ETH", "Ether"], ["LTC", "Litecoin"],
 ["XMR", "Monero"], ["XRP", "Ripple"], ["DOGE", "Dogecoin"], ["DASH", "Dash"], ["MAID", "MaidSafeeCoin"], ["LSK", "Lisk"], ["SJCX", "Storjcoin"]]);
@@ -14,8 +18,11 @@ const TIMESTAMP_MAP = new Map([["BTC", now], ["ETH", now], ["LTC", now],
 
 async function startTask() {
     // load data from nomic every 30s
-    if (!redis_pub_sub || !redis_cache || !NOMIC_API_KEY) {
-        console.err('Please set these environment variables correctly: redis_pub_sub_url, redis_cache_url, nomic_api_key');
+    if (!redis_pub_sub_url || !redis_cache_url || !nomic_api_key ||
+        redis_pub_sub_url == "empty" || redis_cache_url == "empty" || nomic_api_key == "empty"
+    ) {
+        console.error('Please set these environment variables correctly: redis_pub_sub_url, redis_cache_url, nomic_api_key');
+        return;
     }
 
     schedule.scheduleJob('load_cryptocurrency_realtime_price', '10,40 * * * * *', async () => {
