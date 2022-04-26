@@ -5,16 +5,17 @@ const schedule = require('node-schedule');
 const redis_pub_sub_url = process.env.redis_pub_sub_url;
 const redis_cache_url = process.env.redis_cache_url;
 const nomic_api_key = process.env.nomic_api_key;
+
 const redis_pub_sub = new Redis(redis_pub_sub_url);
 const redis_cache = new Redis(redis_cache_url);
 const NOMIC_API_KEY = nomic_api_key;
 
 const NAME_MAP = new Map([["BTC", "Bitcoin"], ["ETH", "Ether"], ["LTC", "Litecoin"],
-["XMR", "Monero"], ["XRP", "Ripple"], ["DOGE", "Dogecoin"], ["DASH", "Dash"], ["MAID", "MaidSafeeCoin"], ["LSK", "Lisk"], ["SJCX", "Storjcoin"]]);
+["XMR", "Monero"], ["XRP", "Ripple"], ["DOGE", "Dogecoin"], ["DASH", "Dash"], ["MAID2", "MaidSafeeCoin"], ["LSK", "Lisk"], ["SJCX", "Storjcoin"]]);
 
 const now = new Date('1999-12-01').getTime();
 const TIMESTAMP_MAP = new Map([["BTC", now], ["ETH", now], ["LTC", now],
-["XMR", now], ["XRP", now], ["DOGE", now], ["DASH", now], ["MAID", now], ["LSK", now], ["SJCX", now]]);
+["XMR", now], ["XRP", now], ["DOGE", now], ["DASH", now], ["MAID2", now], ["LSK", now], ["SJCX", now]]);
 
 async function startTask() {
     // load data from nomic every 30s
@@ -36,7 +37,7 @@ async function startTask() {
 
 function updateDataFromNomics() {
 
-    // get id array, split by ,
+    // get ids string, split by ,
     let IDS = '';
     NAME_MAP.forEach((val, key) => {
         if (IDS !== '') {
@@ -50,6 +51,47 @@ function updateDataFromNomics() {
         let res_data = response.data;
         for (let curr_data of res_data) {
             curr_data["name"] = NAME_MAP.get(curr_data.currency);
+            // update message
+            let updateMessage = {
+                name: curr_data["name"],
+                changeList: []
+            }
+
+            if (curr_data.status === "inactive") {
+                let cached_val = await redis_cache.get(curr_data["name"]);
+                if (cached_val) {
+                    cached_val = JSON.parse(cached_val);
+
+                    if (cached_val.price != "Unknown") {
+                        updateMessage.changeList.push({
+                            property: "price",
+                            value: "Unknown",
+                        })
+                    }
+                    if (cached_val.volume != "Unknown") {
+                        updateMessage.changeList.push({
+                            property: "volume",
+                            value: "Unknown",
+                        })
+                    }
+                    if (cached_val.change != "Unknown") {
+                        updateMessage.changeList.push({
+                            property: "change",
+                            value: "Unknown",
+                        })
+                    }
+                    // publish message
+                    if (updateMessage.changeList.length > 0) {
+                        console.log("Published %s to %s", updateMessage, 'currency_info_change');
+                        redis_pub_sub.publish('currency_info_change', JSON.stringify(updateMessage));
+                        cacheData(redis_cache, curr_data);
+                    }
+
+                } else {
+                    cacheData(redis_cache, curr_data);
+                }
+                continue;
+            }
 
             // update when timestamp refreshed
             let refreshTime = new Date(curr_data.price_timestamp).getTime();
@@ -59,36 +101,33 @@ function updateDataFromNomics() {
                 if (cached_val) {
                     cached_val = JSON.parse(cached_val);
 
-                    // generate update message
-                    let message = {
-                        name: curr_data["name"],
-                        changeList: []
-                    }
                     if (curr_data.price != cached_val.price) {
-                        message.changeList.push({
+                        updateMessage.changeList.push({
                             property: "price",
                             value: curr_data.price,
                         })
                     }
-                    if (curr_data["1d"].volume != cached_val.volume) {
-                        message.changeList.push({
+                    if (curr_data["1d"] && curr_data["1d"].volume != cached_val.volume) {
+                        updateMessage.changeList.push({
                             property: "volume",
                             value: curr_data["1d"].volume,
                         })
                     }
-                    if (curr_data["1d"].price_change != cached_val.price_change) {
-                        message.changeList.push({
+                    if (curr_data["1d"] && curr_data["1d"].price_change != cached_val.change) {
+                        updateMessage.changeList.push({
                             property: "change",
                             value: curr_data["1d"].price_change,
                         })
                     }
 
-                    // save refreshed data to redis
-                    cacheData(redis_cache, curr_data);
+                    if (updateMessage.changeList.length > 0) {
+                        // save refreshed data to redis
+                        cacheData(redis_cache, curr_data);
 
-                    // publish message
-                    console.log("Published %s to %s", message, 'currency_info_change');
-                    redis_pub_sub.publish('currency_info_change', JSON.stringify(message));
+                        // publish message
+                        console.log("Published %s to %s", updateMessage, 'currency_info_change');
+                        redis_pub_sub.publish('currency_info_change', JSON.stringify(updateMessage));
+                    }
                 } else {
                     cacheData(redis_cache, curr_data);
                 }
@@ -97,12 +136,21 @@ function updateDataFromNomics() {
     });
 
     function cacheData(redis_cache, curr_data) {
-        redis_cache.set(curr_data["name"], JSON.stringify({
-            name: curr_data["name"],
-            price: curr_data.price,
-            volume: curr_data["1d"].volume,
-            change: curr_data["1d"].price_change,
-        }));
+        if (curr_data.status === "inactive") {
+            redis_cache.set(curr_data["name"], JSON.stringify({
+                name: curr_data["name"],
+                price: 'Unknown',
+                volume: 'Unknown',
+                change: 'Unknown',
+            }));
+        } else {
+            redis_cache.set(curr_data["name"], JSON.stringify({
+                name: curr_data["name"],
+                price: curr_data.price,
+                volume: curr_data["1d"].volume,
+                change: curr_data["1d"].price_change,
+            }));
+        }
     }
 
     function fetchDataFromNomics(url, callback) {
